@@ -1,6 +1,8 @@
 # hylo
 
-A Clojure library designed to ... well, that part is up to you.
+A DSL for static types and type classes in Clojure.
+
+Core type inference algorithm is ported from "A literate Haskell implementation of Algorithm W." by Martin Grabmüller (https://github.com/wh5a/Algorithm-W-Step-By-Step)
 
 ## Usage
 

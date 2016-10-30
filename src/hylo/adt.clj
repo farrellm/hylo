@@ -23,3 +23,20 @@
 
 (defmacro defadt [name & elems]
   (-defadt name elems))
+
+(defn- -match-line [x [[v & ls] e]]
+  (if (keyword? v)
+    `[~v ~(if (seq ls)
+            `(let [[~@ls] ~x] ~e)
+            e)]
+    `[(let [~v ~x] ~e)]))
+
+(defn- -match [val lines]
+  (let [v (gensym "v")]
+    `(let [~v ~val]
+       (case (variant ~v)
+         ~@(mapcat (partial -match-line v)
+                   (partition 2 lines))))))
+
+(defmacro match [val & lines]
+  (-match val lines))

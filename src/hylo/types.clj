@@ -2,11 +2,6 @@
   (:require [hylo.adt :refer :all]
             [clojure.set :as set]))
 
-(derive clojure.lang.PersistentVector ::list)
-(derive clojure.lang.ISeq ::list)
-(derive clojure.lang.PersistentArrayMap ::map)
-(derive clojure.lang.PersistentHashSet ::set)
-
 (defadt exp
   (e-var name)
   (e-lit lit)
@@ -28,69 +23,40 @@
   (scheme ns ty))
 
 
-;;; class Types
-(def ftv nil)
-(defmulti ftv type)
-(def apply-types nil)
-(defmulti apply-types (fn [_ v] (type v)))
-
 ;;; instance Types Type
-(defmethod ftv ::type [t]
-  (case (variant t)
-    ::t-var (let [[n] t] #{n})
-    ::t-int #{}
-    ::t-bool #{}
-    ::t-fun (let [[param ret] t]
-              (set/union (ftv param) (ftv ret)))))
+(defn ftv-type [t]
+  (match t
+    [::t-var n] #{n}
+    [::t-int] #{}
+    [::t-bool] #{}
+    [::t-fun param ret] (set/union (ftv-type param) (ftv-type ret))))
 
-(defmethod apply-types ::type [s t]
-  (case (variant t)
-    ::t-var (let [[n] t]
-              (if-let [s n] t n))
-    ::t-fun (let [[t1 t2] t]
-              (t-fun (apply-types s t1) (apply-types s t2)))
-    t))
+(defn apply-type [s t]
+  (match t
+    [::t-var n] (if-let [s n] t n)
+    [::t-fun t1 t2] (t-fun (apply-type s t1) (apply-type s t2))
+    [_] t))
 
 
 ;;; instance Types Scheme
-(defmethod ftv ::scheme [[vars t]]
-  (set/difference (ftv t) (into #{} vars)))
-
-(defmethod apply-types ::scheme [s [vars t]]
-  (scheme vars (apply-types (apply dissoc s vars))))
+(defn apply-scheme [s [vars t]]
+  (scheme vars (apply-type (apply dissoc s vars) t)))
 
 
 ;;; instance Types List
-(defmethod ftv ::list [l]
-  (apply set/union (map ftv l)))
-(defmethod ftv nil [_]
-  (ftv []))
+(defn ftv-coll [c]
+  (apply set/union (map ftv-type c)))
 
-(defmethod apply-types ::list [s l]
-  (map (partial apply-types s) l))
-(defmethod apply-types nil [s _]
-  (map (partial apply-types s) []))
-
-
-(def null-subst {})
 
 (defn- map-values [f m]
   (into {} (map (fn [[k v]] [k (f v)]) m)))
 
 (defn compose-subst [s1 s2]
-  (merge (map-values (partial apply-types s1) s2) s1))
-
-;; (defadt type-env
-;;   (type-env env))
-
-;; (defn type-env-dissoc [[env] var]
-;;   (dissoc env var))
-
-(def empty-env ^{:type ::type-env} {})
+  (merge (map-values (partial apply-type s1) s2) s1))
 
 ;;; instance Types type-env
-(defmethod ftv ::type-env [env]
-  (ftv (vals env)))
+(defn ftv-env [env]
+  (ftv-coll (vals env)))
 
-(defmethod apply-types ::type-env [s env]
-  (map-values (partial apply-types s) env))
+(defn apply-env [s env]
+  (map-values (partial apply-scheme s) env))

@@ -15,7 +15,7 @@
 
 (defn var-bind [u t]
   (cond
-    (= t (t-var))
+    (= (variant t) :hylo.types/t-var)
     {}
 
     (contains? (ftv-type t) u)
@@ -27,7 +27,7 @@
 (defn mgu [t1 t2]
   (cond
     (and (= :hylo.types/t-fun (variant t1))
-         (= :hylo.types/t-fun (variant t1)))
+         (= :hylo.types/t-fun (variant t2)))
     (let [[l1 r1] t1
           [l2 r2] t2
           s1 (mgu l1 l2)
@@ -42,12 +42,9 @@
     (let [[u] t2]
       (var-bind u t1))
 
-    (and (= :hylo.types/t-int (variant t1))
-         (= :hylo.types/t-int (variant t2)))
-    {}
-
-    (and (= :hylo.types/t-bool (variant t1))
-         (= :hylo.types/t-bool (variant t2)))
+    (and (= :hylo.types/t-prim (variant t1))
+         (= :hylo.types/t-prim (variant t2))
+         (= t1 t2))
     {}
 
     :else
@@ -55,8 +52,8 @@
 
 (defn ti-lit [lit]
   (match lit
-    [:hylo.types/l-int] [{} t-int]
-    [:hylo.types/l-bool] [{} t-bool]))
+    [:hylo.types/l-long] [{} (t-prim :long)]
+    [:hylo.types/l-bool] [{} (t-prim :bool)]))
 
 (defn ti [env exp]
   (match exp
@@ -94,9 +91,39 @@
   (let [[s t] (ti env e)]
     (apply-type s t)))
 
-(defn show-type [t]
-  (match t
-    [:hylo.types/t-bool] "Bool"
-    [:hylo.types/t-int] "Int"
-    [:hylo.types/t-var n] n
-    [:hylo.types/t-fun t1 t2] (str (show-type t1) " -> " (show-type t2))))
+(def clj->ir)
+
+(defn- make-let [ps e]
+  (if (seq ps)
+    (let [[n v & rs] ps]
+      (e-let (name n) (clj->ir v) (make-let rs e)))
+    (clj->ir e)))
+
+(defn- make-fn [[p & ps] e]
+  (e-abs (name p)
+         (if (seq ps)
+           (make-fn ps e)
+           (clj->ir e))))
+
+(defn- make-ap [f [p & ps]]
+  (if (seq ps)
+    (make-ap (e-app f (clj->ir p)) ps)
+    (e-app (clj->ir f) (clj->ir p))))
+
+(defn clj->ir [body]
+  (cond
+    (instance? Boolean body)
+    (e-lit (l-bool body))
+
+    (instance? Long body)
+    (e-lit (l-long body))
+
+    (symbol? body)
+    (e-var body)
+
+    :else
+    (let [[f & xs] body]
+      (case f
+        clojure.core/let (apply make-let xs)
+        clojure.core/fn (apply make-fn xs)
+        (make-ap f xs)))))

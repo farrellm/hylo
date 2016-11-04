@@ -10,13 +10,12 @@
   (e-let name val body))
 
 (defadt lit
-  (l-int i)
+  (l-long i)
   (l-bool b))
 
 (defadt type
   (t-var name)
-  t-int
-  t-bool
+  (t-prim t)
   (t-fun param ret))
 
 (defadt scheme
@@ -27,13 +26,12 @@
 (defn ftv-type [t]
   (match t
     [::t-var n] #{n}
-    [::t-int] #{}
-    [::t-bool] #{}
+    [::t-prim _] #{}
     [::t-fun param ret] (set/union (ftv-type param) (ftv-type ret))))
 
 (defn apply-type [s t]
   (match t
-    [::t-var n] (if-let [s n] t n)
+    [::t-var n] (if-let [t' (s n)] t' t)
     [::t-fun t1 t2] (t-fun (apply-type s t1) (apply-type s t2))
     [_] t))
 
@@ -60,3 +58,17 @@
 
 (defn apply-env [s env]
   (map-values (partial apply-scheme s) env))
+
+
+(defn show-type [t]
+  (match t
+    [:hylo.types/t-prim t] (str t)
+    [:hylo.types/t-var n] n
+    [:hylo.types/t-fun t1 t2] (str (show-type t1) " -> " (show-type t2))))
+
+(defn show-exp [exp]
+  (match exp
+    [:hylo.types/e-var n] (str n)
+    [:hylo.types/e-lit l] (str (l 0))
+    [:hylo.types/e-abs p e] (str "(fn [" (show-exp p) "]" (show-exp e) ")")
+    [:hylo.types/e-app f a] (str "(" (show-exp f) " " (show-exp a) ")")))

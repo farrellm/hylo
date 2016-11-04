@@ -6,7 +6,7 @@
 (deftest a-test
   (testing "doesn't crash"
     (map (comp prn show-type (partial type-inference {}))
-         [(e-lit (l-int 8))
+         [(e-lit (l-long 8))
           (e-abs "x" (e-var "x"))
           (e-let "id" (e-abs "x" (e-var "x")) (e-var "id"))])
     (is true)))

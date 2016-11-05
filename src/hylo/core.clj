@@ -113,6 +113,12 @@
     (instance? Long body)
     (e-lit :long body)
 
+    (instance? Double body)
+    (e-lit :double body)
+
+    (keyword? body)
+    (e-lit :keyword body)
+
     (symbol? body)
     (e-sym body)
 

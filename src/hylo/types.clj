@@ -3,19 +3,15 @@
             [clojure.set :as set]))
 
 (defadt exp
-  (e-var name)
-  (e-lit lit)
-  (e-app func arg)
-  (e-abs s e)
+  (e-sym name)
+  (e-lit type val)
+  (e-ap func arg)
+  (e-fn arg exp)q
   (e-let name val body))
-
-(defadt lit
-  (l-long i)
-  (l-bool b))
 
 (defadt type
   (t-var name)
-  (t-prim t)
+  (t-prim type)
   (t-fun param ret))
 
 (defadt scheme
@@ -69,6 +65,6 @@
 (defn show-exp [exp]
   (match exp
     [:hylo.types/e-var n] (str n)
-    [:hylo.types/e-lit l] (str (l 0))
-    [:hylo.types/e-abs p e] (str "(fn [" (show-exp p) "]" (show-exp e) ")")
-    [:hylo.types/e-app f a] (str "(" (show-exp f) " " (show-exp a) ")")))
+    [:hylo.types/e-lit _ l] (str l)
+    [:hylo.types/e-fn p e] (str "(fn [" (show-exp p) "]" (show-exp e) ")")
+    [:hylo.types/e-ap f a] (str "(" (show-exp f) " " (show-exp a) ")")))

@@ -50,29 +50,24 @@
     :else
     (throw (RuntimeException. (str "types do not unify: " t1 " vs. " t2)))))
 
-(defn ti-lit [lit]
-  (match lit
-    [:hylo.types/l-long] [{} (t-prim :long)]
-    [:hylo.types/l-bool] [{} (t-prim :bool)]))
-
 (defn ti [env exp]
   (match exp
-    [:hylo.types/e-var n]
+    [:hylo.types/e-sym n]
     (if-let [sigma (env n)]
       [{} (instantiate sigma)]
       (throw (RuntimeException. (str "unbound variable: " n))))
 
-    [:hylo.types/e-lit l]
-    (ti-lit l)
+    [:hylo.types/e-lit t v]
+    [{} (t-prim t)]
 
-    [:hylo.types/e-abs n e]
+    [:hylo.types/e-fn n e]
     (let [tv (new-ty-var "b")
           env' (dissoc env n)
           env'' (merge env' {n (scheme [] tv)})
           [s1 t1] (ti env'' e)]
       [s1 (t-fun (apply-type s1 tv) t1)])
 
-    [:hylo.types/e-app e1 e2]
+    [:hylo.types/e-ap e1 e2]
     (let [tv (new-ty-var "c")
           [s1 t1] (ti env e1)
           [s2 t2] (ti (apply-type s1 env) e2)
@@ -100,26 +95,26 @@
     (clj->ir e)))
 
 (defn- make-fn [[p & ps] e]
-  (e-abs (name p)
-         (if (seq ps)
-           (make-fn ps e)
-           (clj->ir e))))
+  (e-fn (name p)
+        (if (seq ps)
+          (make-fn ps e)
+          (clj->ir e))))
 
 (defn- make-ap [f [p & ps]]
   (if (seq ps)
-    (make-ap (e-app f (clj->ir p)) ps)
-    (e-app (clj->ir f) (clj->ir p))))
+    (make-ap (e-ap f (clj->ir p)) ps)
+    (e-ap (clj->ir f) (clj->ir p))))
 
 (defn clj->ir [body]
   (cond
     (instance? Boolean body)
-    (e-lit (l-bool body))
+    (e-lit :boolean body)
 
     (instance? Long body)
-    (e-lit (l-long body))
+    (e-lit :long body)
 
     (symbol? body)
-    (e-var body)
+    (e-sym body)
 
     :else
     (let [[f & xs] body]

@@ -126,7 +126,7 @@
 
     :else
     (let [[f & xs] body]
-      (case f
-        clojure.core/let (apply make-let xs)
-        clojure.core/fn (apply make-fn xs)
-        (make-ap f xs)))))
+      (condp = f
+        'let (apply make-let xs)
+        'fn (apply make-fn xs)
+        :else (make-ap f xs)))))

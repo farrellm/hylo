@@ -3,7 +3,9 @@
             [hylo.types :refer :all]))
 
 (defn new-ty-var [prefix]
-  (t-var (gensym prefix)))
+  (-> (gensym (str prefix "_"))
+      keyword
+      t-var))
 
 (defn instantiate [[vars t]]
   (let [nvars (map (constantly (new-ty-var "a")) vars)

@@ -91,11 +91,11 @@
 (defn- make-let [ps e]
   (if (seq ps)
     (let [[n v & rs] ps]
-      (e-let (name n) (clj->ir v) (make-let rs e)))
+      (e-let n (clj->ir v) (make-let rs e)))
     (clj->ir e)))
 
 (defn- make-fn [[p & ps] e]
-  (e-fn (name p)
+  (e-fn p
         (if (seq ps)
           (make-fn ps e)
           (clj->ir e))))

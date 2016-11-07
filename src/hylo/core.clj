@@ -58,36 +58,43 @@
   (match exp
     [:hylo.types/e-sym n]
     (if-let [sigma (env n)]
-      [{} (instantiate sigma)]
+      [{} (assoc-meta exp :ti (instantiate sigma))]
       (throw (RuntimeException. (str "unbound variable: " n))))
 
     [:hylo.types/e-lit t v]
-    [{} (t-prim t)]
+    [{} (assoc-meta exp :ti (t-prim t))]
 
     [:hylo.types/e-fn n e]
     (let [tv (new-ty-var "b")
           env' (dissoc env n)
           env'' (merge env' {n (scheme [] tv)})
-          [s1 t1] (ti env'' e)]
-      [s1 (t-fun (apply-type s1 tv) t1)])
+          [s1 e'] (ti env'' e)
+          tf (t-fun (apply-type s1 tv)
+                    (:ti (meta e')))]
+      [s1 (assoc-meta (e-fn n e') :ti tf)])
 
     [:hylo.types/e-ap e1 e2]
     (let [tv (new-ty-var "c")
-          [s1 t1] (ti env e1)
-          [s2 t2] (ti (apply-type s1 env) e2)
-          s3 (mgu (apply-type s2 t1) (t-fun t2 tv))]
-      [(compose-subst (compose-subst s3 s2) s1) (apply-type s3 tv)])
+          [s1 e1'] (ti env e1)
+          [s2 e2'] (ti (apply-type s1 env) e2)
+          s3 (mgu (apply-type s2 (:ti (meta e1')))
+                  (t-fun (:ti (meta e2')) tv))
+          s4 (compose-subst (compose-subst s3 s2) s1)]
+      [s4 (apply-exp s4 (assoc-meta (e-ap e1' e2') :ti (apply-type s3 tv)))])
 
     [:hylo.types/e-let x e1 e2]
-    (let [[s1 t1] (ti env e1)
+    (let [[s1 e1'] (ti env e1)
           env' (dissoc env x)
-          t' (generalize (apply-env s1 env) t1)
+          t' (generalize (apply-env s1 env) (:ti (meta e1')))
           env'' (assoc env' x t')
-          [s2 t2] (ti (apply-env s1 env'') e2)]
-      [(compose-subst s1 s2) t2])))
+          [s2 e2'] (ti (apply-env s1 env'') e2)
+          s3 (compose-subst s1 s2)
+          e1'' (apply-exp s3 e1')]
+      [s3 (assoc-meta (e-let x e1'' e2') :ti (:ti (meta e2')))])))
 
 (defn type-inference [env e]
-  (let [[s t] (ti env e)]
+  (let [[s e] (ti env e)
+        t (:ti (meta e))]
     (apply-type s t)))
 
 (def clj->ir)

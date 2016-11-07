@@ -2,12 +2,19 @@
   (:require [hylo.adt :refer :all]
             [clojure.set :as set]))
 
+(defn assoc-meta [obj k v]
+  (with-meta obj (assoc (meta obj) k v)))
+
+(defn update-meta [obj k f]
+  (with-meta obj (update (meta obj) k f)))
+
+
 (defadt exp
   (e-sym name)
   (e-lit type val)
   (e-ap func arg)
-  (e-fn arg exp)
-  (e-let name val body))
+  (e-fn param exp)
+  (e-let name val exp))
 
 (defadt type
   (t-var name)
@@ -61,6 +68,33 @@
 
 (defn apply-env [s env]
   (map-values (partial apply-scheme s) env))
+
+
+
+;;; instance Types Exp
+(defn apply-exp [s exp]
+  (when (-> (meta exp) (:ti) nil?)
+    (throw (RuntimeException. (str "Type inference missing on " exp))))
+  (match exp
+    [::e-sym n]
+    (update-meta exp :ti (partial apply-type s))
+
+    [::e-lit _ _]
+    exp
+
+    [::e-ap f a]
+    (assoc-meta (e-ap (apply-exp s f)
+                      (apply-exp s a))
+                :ti (apply-type s (:ti (meta exp))))
+
+    [::e-fn p e]
+    (assoc-meta (e-fn p (apply-exp s e))
+                :ti (apply-type s (:ti (meta exp))))
+
+    [::e-let n v e]
+    (assoc-meta (e-let n (apply-exp s v)
+                       (apply-exp s e))
+                :ti (apply-type s (:ti (meta exp))))))
 
 
 (defn show-type [t]

@@ -6,7 +6,7 @@
   (e-sym name)
   (e-lit type val)
   (e-ap func arg)
-  (e-fn arg exp)q
+  (e-fn arg exp)
   (e-let name val body))
 
 (defadt type

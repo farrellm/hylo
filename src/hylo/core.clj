@@ -17,11 +17,13 @@
 
 (defn var-bind [u t]
   (cond
-    (= (variant t) :hylo.types/t-var)
+    (and (= (variant t) :hylo.types/t-var)
+         (= t (t-var u)))
     {}
 
     (contains? (ftv-type t) u)
-    (throw (RuntimeException. (str "occur check fails: " u " vs. " t)))
+    (throw (RuntimeException.
+            (str "occur check fails: " u " vs. " (show-type t))))
 
     :else
     {u t}))
@@ -129,4 +131,4 @@
       (condp = f
         'let (apply make-let xs)
         'fn (apply make-fn xs)
-        :else (make-ap f xs)))))
+        (make-ap f xs)))))

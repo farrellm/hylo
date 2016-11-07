@@ -33,13 +33,20 @@
 
 
 ;;; instance Types Scheme
+(defn ftv-scheme [s]
+  (match s
+    [::scheme vs t] (set/difference (ftv-type t) (into #{} vs))))
+
 (defn apply-scheme [s [vars t]]
   (scheme vars (apply-type (apply dissoc s vars) t)))
 
 
 ;;; instance Types List
-(defn ftv-coll [c]
+(defn ftv-coll-type [c]
   (apply set/union (map ftv-type c)))
+
+(defn ftv-coll-scheme [c]
+  (apply set/union (map ftv-scheme c)))
 
 
 (defn- map-values [f m]
@@ -50,7 +57,7 @@
 
 ;;; instance Types type-env
 (defn ftv-env [env]
-  (ftv-coll (vals env)))
+  (ftv-coll-scheme (vals env)))
 
 (defn apply-env [s env]
   (map-values (partial apply-scheme s) env))

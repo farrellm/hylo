@@ -92,10 +92,14 @@
           e1'' (apply-exp s3 e1')]
       [s3 (assoc-meta (e-let x e1'' e2') :ti (:ti (meta e2')))])))
 
-(defn type-inference [env e]
-  (let [[s e] (ti env e)
+(defn type-inference [env exp]
+  (let [[s e] (ti env exp)
         t (:ti (meta e))]
     (apply-type s t)))
+
+(defn annotate-expression [env exp]
+  (let [[s e] (ti env exp)]
+    (apply-exp s e)))
 
 (def clj->ir)
 
@@ -112,9 +116,11 @@
           (clj->ir e))))
 
 (defn- make-ap [f [p & ps]]
-  (if (seq ps)
-    (make-ap (e-ap f (clj->ir p)) ps)
-    (e-ap (clj->ir f) (clj->ir p))))
+  (let [f' (if (= (type f) :hylo.types/exp)
+             f (clj->ir f))]
+    (if (seq ps)
+      (make-ap (e-ap f' (clj->ir p)) ps)
+      (e-ap f' (clj->ir p)))))
 
 (defn clj->ir [body]
   (cond
@@ -139,3 +145,13 @@
         'let (apply make-let xs)
         'fn (apply make-fn xs)
         (make-ap f xs)))))
+
+(def ir->clj)
+
+(defn ir->clj [body]
+  (match body
+    [:hylo.types/e-sym s] s
+    [:hylo.types/e-lit _ l] l
+    [:hylo.types/e-ap f a] `(~(ir->clj f) ~(ir->clj a))
+    [:hylo.types/e-fn p e] `(~'fn [~p] ~(ir->clj e))
+    [:hylo.types/e-let n v e] `(~'let [~n ~(ir->clj v)] ~(ir->clj e))))

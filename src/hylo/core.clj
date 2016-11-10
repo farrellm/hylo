@@ -155,3 +155,17 @@
     [:hylo.types/e-ap f a] `(~(ir->clj f) ~(ir->clj a))
     [:hylo.types/e-fn p e] `(~'fn [~p] ~(ir->clj e))
     [:hylo.types/e-let n v e] `(~'let [~n ~(ir->clj v)] ~(ir->clj e))))
+
+(def hylo-environment {})
+
+(defmacro hylo_require [& incs]
+  `(do (alter-var-root (var hylo.core/hylo-environment) assoc (ns-name *ns*) {})))
+
+(defn -hylo [env e]
+  (->> (clj->ir e)
+       (annotate-expression env)
+       ir->clj
+       ))
+
+(defmacro hylo [& body]
+  `(do ~@(map (partial -hylo (hylo-environment (ns-name *ns*))) body)))

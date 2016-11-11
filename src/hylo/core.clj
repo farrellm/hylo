@@ -78,19 +78,18 @@
           [s1 e1'] (ti env e1)
           [s2 e2'] (ti (apply-type s1 env) e2)
           s3 (mgu (apply-type s2 (:ti (meta e1')))
-                  (t-fun (:ti (meta e2')) tv))
-          s4 (compose-subst (compose-subst s3 s2) s1)]
-      [s4 (apply-exp s4 (assoc-meta (e-ap e1' e2') :ti (apply-type s3 tv)))])
+                  (t-fun (:ti (meta e2')) tv))]
+      [(compose-subst (compose-subst s3 s2) s1)
+       (assoc-meta (e-ap e1' e2') :ti (apply-type s3 tv))])
 
     [:hylo.types/e-let x e1 e2]
     (let [[s1 e1'] (ti env e1)
           env' (dissoc env x)
           t' (generalize (apply-env s1 env) (:ti (meta e1')))
           env'' (assoc env' x t')
-          [s2 e2'] (ti (apply-env s1 env'') e2)
-          s3 (compose-subst s1 s2)
-          e1'' (apply-exp s3 e1')]
-      [s3 (assoc-meta (e-let x e1'' e2') :ti (:ti (meta e2')))])))
+          [s2 e2'] (ti (apply-env s1 env'') e2)]
+      [(compose-subst s1 s2)
+       (assoc-meta (e-let x e1' e2') :ti (:ti (meta e2')))])))
 
 (defn type-inference [env exp]
   (let [[s e] (ti env exp)

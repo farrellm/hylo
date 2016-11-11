@@ -105,7 +105,9 @@
 
 (defn show-exp [exp]
   (match exp
+    [:hylo.types/e-sym s] (str s)
     [:hylo.types/e-var n] (str n)
     [:hylo.types/e-lit _ l] (str l)
-    [:hylo.types/e-fn p e] (str "(fn [" (show-exp p) "]" (show-exp e) ")")
-    [:hylo.types/e-ap f a] (str "(" (show-exp f) " " (show-exp a) ")")))
+    [:hylo.types/e-fn p e] (str "(fn [" p "] " (show-exp e) ")")
+    [:hylo.types/e-ap f a] (str "(" (show-exp f) " " (show-exp a) ")")
+    [:hylo.types/e-let n v e] (str "(let [" n " " (show-exp v) "] " (show-exp e) ")")))

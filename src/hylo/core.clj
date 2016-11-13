@@ -89,7 +89,19 @@
           env'' (assoc env' x t')
           [s2 e2'] (ti (apply-env s1 env'') e2)]
       [(compose-subst s1 s2)
-       (assoc-meta (e-let x e1' e2') :ti (:ti (meta e2')))])))
+       (assoc-meta (e-let x e1' e2') :ti (:ti (meta e2')))])
+
+    [:hylo.types/e-unit]
+    [{} (assoc-meta e-unit :ti t-unit)]
+
+    [:hylo.types/e-pair a b]
+    (let [[s1 a'] (ti env a)
+          [s2 b'] (ti (apply-type s1 env) b)]
+      [(compose-subst s2 s1)
+       (assoc-meta (e-pair a' b') :ti (t-pair (:ti (meta a')) (:ti (meta b'))))])
+
+    [:hylo.types/e-type t]
+    [{} (assoc-meta t :ti t-type)]))
 
 (defn type-inference [env exp]
   (let [[s e] (ti env exp)
@@ -137,6 +149,15 @@
 
     (symbol? body)
     (e-sym body)
+
+    (= [] body)
+    e-unit
+
+    (vector? body)
+    (if (= 2 (count body))
+      (let [[a b] body]
+        (e-pair (clj->ir a) (clj->ir b)))
+      (throw (RuntimeException. (str "only pairs allowed: " body))))
 
     :else
     (let [[f & xs] body]

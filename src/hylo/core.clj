@@ -36,7 +36,7 @@
           [l2 r2] t2
           s1 (mgu l1 l2)
           s2 (mgu (apply-type s1 r1) (apply-type s1 r2))]
-      (compose-subst s1 s2))
+      (compose-subst s2 s1))
 
     (= :hylo.types/t-var (variant t1))
     (let [[u] t1]
@@ -88,7 +88,7 @@
           t' (generalize (apply-env s1 env) (:ti (meta e1')))
           env'' (assoc env' x t')
           [s2 e2'] (ti (apply-env s1 env'') e2)]
-      [(compose-subst s1 s2)
+      [(compose-subst s2 s1)
        (assoc-meta (e-let x e1' e2') :ti (:ti (meta e2')))])
 
     [:hylo.types/e-unit]

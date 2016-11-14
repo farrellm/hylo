@@ -27,6 +27,11 @@
              (fn [m] (let [y m]
                        (let [x (y true)]
                          x)))
+             (fn [a] (let [x (fn [b] (let [y (fn [c] (a 1))]
+                                       (y 2)))]
+                       (x 3)))
+             #_(fn [a] (fn [b] (b (a (a b)))))
+
              []
              (let [id (fn [x] x)] [])
              [:a 8]

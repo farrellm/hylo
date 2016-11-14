@@ -133,7 +133,7 @@
   (match t
     [::t-prim t] (str t)
     [::t-var n] n
-    [::t-fun t1 t2] (str (show-type t1) " -> " (show-type t2))
+    [::t-fun t1 t2] (str "(" (show-type t1) " -> " (show-type t2) ")")
 
     [::t-unit] "[]"
     [::t-pair a b] (str "[" (show-type a) " " (show-type b) "]")
